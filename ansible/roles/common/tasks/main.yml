@@ -1,0 +1,19 @@
+# Common ports
+- name: Close ports
+  iptables:
+    chain: INPUT
+    jump: DROP
+
+- name: open port 80
+  firewalld:
+    port: 80/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+
+- name: open port 22
+  firewalld:
+    port: 22/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes

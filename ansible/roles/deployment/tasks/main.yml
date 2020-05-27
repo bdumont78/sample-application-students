@@ -1,0 +1,32 @@
+---
+# tasks file for ansible/roles/deployment
+- name: install pip
+  yum:
+    name: python-pip
+
+- name: install Docker python
+  pip:
+    name: docker
+
+- name: Run Database
+  docker_container:
+     name: tp_database
+     image: bdumont78/database_base:1.1
+     networks:
+       - name: tp_network
+
+- name: Run Backend
+  docker_container:
+     name: tp_backend
+     image: bdumont78/backend_base:1.1
+     networks:
+       - name: tp_network
+
+- name: Run HTTPD
+  docker_container:
+     name: httpd
+     image: bdumont78/server_base:1.1                                                                                                                
+     ports:
+       - "80:80"
+     networks:
+       - name: tp_network
