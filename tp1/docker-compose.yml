@@ -1,0 +1,34 @@
+version: '3.7'
+services:
+ backend:
+    build: ./backendApi/simple-api
+    container_name: backend-simple-api
+    networks: 
+      - my-network
+    depends_on:
+      - database
+
+ database:
+    build: ./db
+    container_name: db-tp-pg
+    networks:
+      - my-network
+    environment:
+      - POSTGRES_PASSWORD=pwd 
+    volumes:
+      - type: bind
+        source: ./db/datastore
+        target: /var/lib/postgresql/data
+
+ httpd:
+    build: ./httpServer
+    ports:
+      - "80:80"
+    networks:
+      - my-network
+    depends_on:
+      - backend
+      - database
+
+networks:
+  my-network:

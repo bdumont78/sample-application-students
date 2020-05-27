@@ -1,0 +1,57 @@
+language: java
+
+services:
+  - docker
+
+jobs:
+  include:
+    - stage: test
+      script:
+        - mvn clean verify
+    - stage: publish_database
+      if: branch = develop
+      script:
+        - docker build -t $DOCKERHUB_USER/tp.db  ./Database
+      after_success:
+        - echo $DOCKERHUB_PWD | docker login --username $DOCKERHUB_USER --password-stdin
+        - docker tag $DOCKERHUB_USER/tp.db  $DOCKERHUB_USER/tp.db :1.1
+        - docker push $DOCKERHUB_USER/tp.db 
+    - stage: publish_backend
+      if: branch = develop
+      script:
+        - docker build -t $DOCKERHUB_USER/simple-api ./Backend
+      after_success:
+        - echo $DOCKERHUB_PWD | docker login --username $DOCKERHUB_USER --password-stdin
+        - docker tag $DOCKERHUB_USER/simple-api $DOCKERHUB_USER/simple-api:1.1
+        - docker push $DOCKERHUB_USER/simple-api
+    - stage: publish_server
+      if: branch = develop
+      script:
+        - docker build -t $DOCKERHUB_USER/simple-http ./Server
+      after_success:
+        - echo $DOCKERHUB_PWD | docker login --username $DOCKERHUB_USER --password-stdin
+        - docker tag $DOCKERHUB_USER/simple-http $DOCKERHUB_USER/simple-http:1.1
+        - docker push $DOCKERHUB_USER/simple-http
+    - stage: sonar_scanner
+      addons:
+        sonarcloud:
+          organization: "bdumont78" # the key of the org you chose at step #3
+          token: $SONAR_KEY
+      script:
+        # the following command line builds the project, runs the tests with coverage and then execute the SonarCloud analysis
+        - mvn clean verify sonar:sonar -Pcoverage -Dsonar.projectKey=bdumont78_sample-application-students
+    - stage: deploy
+      if: branch = master
+      addons:
+        ssh_known_hosts: dumont-benjamin-formation.takima.io
+      install:
+        - sudo apt update
+        - sudo apt install software-properties-common
+        - sudo apt-add-repository --yes --update ppa:ansible/ansible
+        - sudo apt install ansible
+      script:
+        - openssl aes-256-cbc -K $encrypted_ec0015db4ac4_key -iv $encrypted_ec0015db4ac4_iv -in id_rsa.enc -out /tmp/deploy_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 /tmp/deploy_rsa
+        - ssh-add /tmp/deploy_rsa
+        - ansible-playbook -i ansible/inventories/setup.yml ansible/playbook.yml
