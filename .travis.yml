@@ -8,26 +8,26 @@ jobs:
     - stage: test
       script:
         - mvn clean verify
-    - stage: publish_database
+    - stage: publish_tp-db 
       if: branch = develop
       script:
-        - docker build -t $DOCKERHUB_USER/tp.db  ./Database
+        - docker build -t $DOCKERHUB_USER/tp.db  ./tp1/db/
       after_success:
         - echo $DOCKERHUB_PWD | docker login --username $DOCKERHUB_USER --password-stdin
         - docker tag $DOCKERHUB_USER/tp.db  $DOCKERHUB_USER/tp.db :1.1
         - docker push $DOCKERHUB_USER/tp.db 
-    - stage: publish_backend
+    - stage: publish_simple-api
       if: branch = develop
       script:
-        - docker build -t $DOCKERHUB_USER/simple-api ./Backend
+        - docker build -t $DOCKERHUB_USER/simple-api ./tp1/backendApi/simple-api
       after_success:
         - echo $DOCKERHUB_PWD | docker login --username $DOCKERHUB_USER --password-stdin
         - docker tag $DOCKERHUB_USER/simple-api $DOCKERHUB_USER/simple-api:1.1
         - docker push $DOCKERHUB_USER/simple-api
-    - stage: publish_server
+    - stage: publish_simple-http
       if: branch = develop
       script:
-        - docker build -t $DOCKERHUB_USER/simple-http ./Server
+        - docker build -t $DOCKERHUB_USER/simple-http ./tp1/httpServer
       after_success:
         - echo $DOCKERHUB_PWD | docker login --username $DOCKERHUB_USER --password-stdin
         - docker tag $DOCKERHUB_USER/simple-http $DOCKERHUB_USER/simple-http:1.1
@@ -35,8 +35,8 @@ jobs:
     - stage: sonar_scanner
       addons:
         sonarcloud:
-          organization: "bdumont78" # the key of the org you chose at step #3
-          token: $SONAR_KEY
+          organization: "bdumont78"
+          token: $SONAR_TOKEN
       script:
         # the following command line builds the project, runs the tests with coverage and then execute the SonarCloud analysis
         - mvn clean verify sonar:sonar -Pcoverage -Dsonar.projectKey=bdumont78_sample-application-students
